@@ -242,11 +242,9 @@ export const components: InfrastructureComponent[] = [
 ]
 export const groups = [...new Set(components.map((c) => c.group))]
 export const teams: Team[] = [
-  { id: 'commerce', name: 'Commerce' },
-  { id: 'experience', name: 'Digital Experience' },
-  { id: 'data', name: 'Data & AI' },
-  { id: 'core', name: 'Core Services' },
-  { id: 'operations', name: 'Operations' },
+  { id: 'aura', name: 'Aura' },
+  { id: 'photon', name: 'Photon' },
+  { id: 'cloud', name: 'Cloud Platform' },
 ]
 export const owners: Owner[] = [
   { id: 'platform', name: 'Platform Team' },
@@ -255,46 +253,21 @@ export const owners: Owner[] = [
   { id: 'security', name: 'Security Engineering' },
   { id: 'devex', name: 'Developer Experience' },
 ]
-const seeds: [string, string, string][] = [
-  ['Payments', 'commerce', 'Secure payment orchestration and transaction processing.'],
-  ['Orders', 'commerce', 'Order lifecycle services for the commerce platform.'],
-  ['Customer Portal', 'experience', 'Self-service account management and customer experience.'],
-  ['Reporting', 'data', 'Operational reporting and business intelligence.'],
-  ['Billing', 'commerce', 'Subscription billing, invoicing, and reconciliation.'],
-  ['Identity', 'core', 'Authentication and identity federation services.'],
-  ['Notifications', 'core', 'Email, push, and event notification delivery.'],
-  ['Analytics', 'data', 'Product analytics and governed data insights.'],
-  ['Document Service', 'core', 'Document storage, generation, and processing.'],
-  ['Integration Gateway', 'core', 'Secure API integration with external systems.'],
-  ['Search Service', 'experience', 'Product and content search across applications.'],
-  ['AI Assistant', 'data', 'Internal AI assistant with retrieval and grounded responses.'],
-  ['Data Processing', 'data', 'Batch and streaming data transformation workloads.'],
-  ['Customer API', 'experience', 'Unified customer profile and account API.'],
-  ['Operations Portal', 'operations', 'Tools and visibility for daily platform operations.'],
-  ['Inventory', 'commerce', 'Real-time inventory availability and reservations.'],
-  ['Recommendations', 'data', 'Personalized product recommendations and ranking.'],
-  ['Audit Service', 'core', 'Centralized audit event capture and compliance reporting.'],
-  ['Partner Connect', 'experience', 'Partner onboarding and integration management.'],
-  ['Fraud Detection', 'data', 'Transaction risk scoring and fraud detection.'],
-  ['Fulfillment', 'commerce', 'Warehouse fulfillment and shipment orchestration.'],
-  ['Knowledge Hub', 'experience', 'Internal documentation and semantic knowledge search.'],
-  ['Pricing Engine', 'commerce', 'Pricing rules, promotions, and offer calculation.'],
-  ['Workforce Portal', 'operations', 'Employee services and workforce administration.'],
-  ['Telemetry', 'operations', 'Application telemetry ingestion and observability.'],
-  ['Asset Management', 'operations', 'Lifecycle management for enterprise assets.'],
-  ['Consent Service', 'core', 'Customer privacy and consent preference management.'],
-  ['Data Catalog', 'data', 'Discovery and governance for enterprise data assets.'],
+const seeds: [string, string, string, string][] = [
+  ['36411-aura-brandiq', 'aura', 'Aura brand intelligence application.', 'BI'],
+  ['36519-aura-trike', 'aura', 'Aura trike application.', 'TR'],
+  ['32938-aura-order-intel', 'aura', 'Aura order intelligence application.', 'OI'],
+  ['32936-aura-reliability', 'aura', 'Aura reliability application.', 'RE'],
+  ['33155-photon', 'photon', 'Photon application.', 'PH'],
+  ['cloud-platform-knowledge', 'cloud', 'Cloud platform knowledge application.', 'KN'],
+  ['cloud-platform-analyzer', 'cloud', 'Cloud platform analyzer.', 'AN'],
+  ['cloud-platform-cost-investigator', 'cloud', 'Cloud platform cost investigation.', 'CI'],
 ]
 const colors = ['sage', 'blue', 'purple', 'amber', 'rose']
-export const projects: Project[] = seeds.map(([name, teamId, description], i) => ({
-  id: name.toLowerCase().replaceAll(' ', '-'),
+export const projects: Project[] = seeds.map(([name, teamId, description, initials], i) => ({
+  id: name,
   name,
-  initials: name
-    .split(' ')
-    .map((s) => s[0])
-    .join('')
-    .slice(0, 2)
-    .padEnd(2, name[1].toUpperCase()),
+  initials,
   description,
   teamId,
   ownerId: i % 5 === 3 ? 'data-platform' : 'platform',
@@ -344,26 +317,27 @@ const componentOwner = (c: InfrastructureComponent) =>
           ? 'data-platform'
           : 'platform'
 function required(project: Project, pi: number, component: InfrastructureComponent) {
+  const id = project.id
   if (component.id === 'pgvector')
-    return project.teamId === 'data' || ['search-service', 'knowledge-hub'].includes(project.id)
-  if (component.id === 'langfuse')
     return [
-      'ai-assistant',
-      'recommendations',
-      'fraud-detection',
-      'knowledge-hub',
-      'analytics',
-      'search-service',
-    ].includes(project.id)
+      '32938-aura-order-intel',
+      '33155-photon',
+      'cloud-platform-knowledge',
+      'cloud-platform-analyzer',
+    ].includes(id)
+  if (component.id === 'langfuse')
+    return !['32936-aura-reliability', 'cloud-platform-cost-investigator'].includes(id)
   if (component.id === 'databricks')
-    return (
-      project.teamId === 'data' || ['reporting', 'telemetry', 'audit-service'].includes(project.id)
-    )
+    return [
+      '32938-aura-order-intel',
+      'cloud-platform-knowledge',
+      'cloud-platform-analyzer',
+      'cloud-platform-cost-investigator',
+    ].includes(id)
   if (component.id === 'frontend-spns')
-    return !['core', 'data'].includes(project.teamId) || project.id === 'ai-assistant'
-  if (component.id === 'spns-graph')
-    return pi % 3 === 1 || ['identity', 'operations-portal', 'ai-assistant'].includes(project.id)
-  if (component.id === 'redis') return pi % 7 !== 6
+    return !['32936-aura-reliability', 'cloud-platform-knowledge'].includes(id)
+  if (component.id === 'spns-graph') return pi % 3 === 1 || id === '33155-photon'
+  if (component.id === 'redis') return id !== 'cloud-platform-knowledge'
   if (component.id === 'persona-groups') return pi % 5 !== 3
   return true
 }
@@ -380,8 +354,8 @@ export const readiness: ComponentReadiness[] = projects.flatMap((project, pi) =>
             : hash < 94
               ? 'Blocked'
               : 'Not Started'
-      // A few fully ready projects make portfolio completion meaningful; Orders Redis is the reference blocker.
-      if ([0, 7, 17].includes(pi) && status !== 'N/A') status = 'Ready'
+      // Brand IQ and the cost investigator are fully ready; Trike Redis is the reference blocker.
+      if ([0, 7].includes(pi) && status !== 'N/A') status = 'Ready'
       if (pi === 1 && component.id === 'redis')
         status = environment === 'PROD' ? 'In Progress' : 'Blocked'
       if (pi === 1 && component.id === 'spns-graph' && environment === 'DEV') status = 'In Progress'

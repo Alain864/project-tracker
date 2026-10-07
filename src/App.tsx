@@ -93,7 +93,7 @@ export default function App() {
           </NavLink>
           <NavLink to="/projects">
             <FolderKanban size={18} />
-            Projects<span className="nav-count">28</span>
+            Projects<span className="nav-count">{projects.length}</span>
           </NavLink>
           <NavLink to="/components">
             <Boxes size={18} />

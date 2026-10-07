@@ -90,7 +90,7 @@ export function Overview() {
           </div>
           <div className="metric-value">
             {projects.length}
-            <span className="metric-chip neutral">5 teams</span>
+            <span className="metric-chip neutral">{teams.length} teams</span>
           </div>
           <span className="metric-caption">
             Across your project portfolio

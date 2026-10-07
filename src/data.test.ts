@@ -14,8 +14,18 @@ import {
 } from './data'
 
 describe('Portfolio data integrity', () => {
-  it('provides 28 projects and every specified infrastructure concept', () => {
-    expect(projects).toHaveLength(28)
+  it('provides 8 AI projects and every specified infrastructure concept', () => {
+    expect(projects).toHaveLength(8)
+    expect(projects.map((p) => p.name)).toEqual([
+      '36411-aura-brandiq',
+      '36519-aura-trike',
+      '32938-aura-order-intel',
+      '32936-aura-reliability',
+      '33155-photon',
+      'cloud-platform-knowledge',
+      'cloud-platform-analyzer',
+      'cloud-platform-cost-investigator',
+    ])
     expect(components.map((c) => c.name)).toEqual([
       'PostgreSQL Databases',
       'pgvector',
@@ -35,7 +45,7 @@ describe('Portfolio data integrity', () => {
       'AAD Security Groups',
       'Persona Groups',
     ])
-    expect(readiness).toHaveLength(28 * 17 * 3)
+    expect(readiness).toHaveLength(8 * 17 * 3)
     expect(new Set(readiness.map((r) => r.id)).size).toBe(readiness.length)
   })
   it('has valid project, component, team, and infrastructure owner relationships', () => {
@@ -79,9 +89,9 @@ describe('Portfolio data integrity', () => {
       for (const count of Object.values(counts)) expect(count).toBeGreaterThan(0)
       expect(projects.some((p) => readinessPercent(getRecords(p.id, env)) === 100)).toBe(true)
     }
-    expect(getRecords('orders', 'DEV', 'redis')[0].status).toBe('Blocked')
-    expect(getRecords('orders', 'DEV', 'redis')[0].blocker!.ticket).toBe('INFRA-2841')
-    expect(getRecords('payments', 'DEV', 'pgvector')[0].status).toBe('N/A')
+    expect(getRecords('36519-aura-trike', 'DEV', 'redis')[0].status).toBe('Blocked')
+    expect(getRecords('36519-aura-trike', 'DEV', 'redis')[0].blocker!.ticket).toBe('INFRA-2841')
+    expect(getRecords('36411-aura-brandiq', 'DEV', 'pgvector')[0].status).toBe('N/A')
   })
 })
 describe('Readiness calculations and record scoping', () => {
@@ -95,21 +105,21 @@ describe('Readiness calculations and record scoping', () => {
     expect(readinessPercent([])).toBe(0)
   })
   it('isolates an exact project × component × environment record', () => {
-    expect(getRecords('orders', 'DEV', 'redis')).toHaveLength(1)
-    expect(getRecords('orders', 'All', 'redis')).toHaveLength(3)
-    expect(getRecords('orders', 'QA')).toHaveLength(17)
-    expect(getRecords(undefined, 'PROD', 'argocd')).toHaveLength(28)
+    expect(getRecords('36519-aura-trike', 'DEV', 'redis')).toHaveLength(1)
+    expect(getRecords('36519-aura-trike', 'All', 'redis')).toHaveLength(3)
+    expect(getRecords('36519-aura-trike', 'QA')).toHaveLength(17)
+    expect(getRecords(undefined, 'PROD', 'argocd')).toHaveLength(8)
   })
   it('supports the matrix status predicate with exact component scope', () => {
-    expect(matchesStatus(getRecords('orders', 'DEV', 'redis'), 'Blocked')).toBe(true)
-    expect(matchesStatus(getRecords('payments', 'DEV'), 'Blocked')).toBe(false)
-    expect(matchesStatus(getRecords('payments', 'DEV'), 'All')).toBe(true)
+    expect(matchesStatus(getRecords('36519-aura-trike', 'DEV', 'redis'), 'Blocked')).toBe(true)
+    expect(matchesStatus(getRecords('36411-aura-brandiq', 'DEV'), 'Blocked')).toBe(false)
+    expect(matchesStatus(getRecords('36411-aura-brandiq', 'DEV'), 'All')).toBe(true)
   })
 })
 
 describe('Combined matrix filters', () => {
   it('applies owner and status to the same component records, excluding unneeded owner records', () => {
-    const records = getRecords('orders', 'DEV')
+    const records = getRecords('36519-aura-trike', 'DEV')
     expect(matchesStatus(filterMatrixRecords(records, 'redis', 'platform'), 'Blocked')).toBe(true)
     expect(matchesStatus(filterMatrixRecords(records, 'redis', 'identity'), 'Blocked')).toBe(false)
     expect(filterMatrixRecords(records, 'pgvector', 'data-platform')).toHaveLength(0)

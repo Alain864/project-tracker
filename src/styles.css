@@ -1520,14 +1520,14 @@ button {
 .sticky-project {
   position: sticky;
   left: 0;
-  width: 224px;
-  min-width: 224px;
+  width: 292px;
+  min-width: 292px;
   z-index: 4;
   background: #fff;
 }
 .sticky-readiness {
   position: sticky;
-  left: 224px;
+  left: 292px;
   width: 82px;
   min-width: 82px;
   z-index: 4;
@@ -1554,11 +1554,10 @@ button {
 }
 .matrix-project strong {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
   font-weight: 500;
-  max-width: 154px;
+  max-width: 220px;
 }
 .matrix-project small {
   display: flex;
@@ -3481,11 +3480,11 @@ button {
     max-width: 95px;
   }
   .sticky-project {
-    width: 180px;
-    min-width: 180px;
+    width: 210px;
+    min-width: 210px;
   }
   .sticky-readiness {
-    left: 180px;
+    left: 210px;
     width: 64px;
     min-width: 64px;
   }
@@ -3494,7 +3493,7 @@ button {
     gap: 7px;
   }
   .matrix-project strong {
-    max-width: 130px;
+    max-width: 150px;
   }
   .matrix-project .project-avatar {
     width: 24px;

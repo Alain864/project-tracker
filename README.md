@@ -32,9 +32,9 @@ The global environment selector supports DEV, QA, PROD, and all environments. In
 
 ## Demo data and methodology
 
-- 28 fictional software projects and 5 application teams.
+- 8 AI projects across Aura, Photon, and Cloud Platform.
 - All 17 requested infrastructure component types.
-- 1,428 readiness records: 28 projects × 17 components × 3 environments.
+- 408 readiness records: 8 projects × 17 components × 3 environments.
 - Every component has its own realistic readiness checklist.
 - Ready, In Progress, Blocked, Not Started, and N/A are represented in every environment.
 - Tickets, resource references, owners, and October 2026 update dates are fictional. Ticket identifiers are displayed as references, not external links.
