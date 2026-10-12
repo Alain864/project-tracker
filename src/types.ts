@@ -1,4 +1,4 @@
-export type Environment = 'DEV' | 'QA' | 'PROD'
+export type Environment = 'DEV' | 'TEST' | 'PREPROD' | 'PROD'
 export type EnvironmentFilter = Environment | 'All'
 export type Status = 'Ready' | 'In Progress' | 'Blocked' | 'Not Started' | 'N/A'
 export type Severity = 'Critical' | 'High' | 'Medium'
@@ -18,6 +18,7 @@ export interface Project {
   teamId: string
   ownerId: string
   color: string
+  inventoryRecorded: boolean
 }
 export interface InfrastructureComponent {
   id: string
@@ -25,21 +26,41 @@ export interface InfrastructureComponent {
   shortName: string
   group: string
   description: string
-  checks: { category: string; label: string }[]
-}
-export interface ReadinessCheck {
-  id: string
-  category: string
-  label: string
-  complete: boolean
 }
 export interface Blocker {
   id: string
   description: string
   severity: Severity
-  ticket: string
   createdAt: string
+  ticket?: string
 }
+export interface InventoryItem {
+  label: string
+  deprecated?: boolean
+}
+export interface TeamAccess {
+  name: string
+  role: string
+  members?: string
+}
+export interface PermissionGrant {
+  scope: string
+  state: 'Granted' | 'Pending'
+  tenant?: string
+}
+export interface RoleAssignment {
+  section: string
+  name: string
+  id?: string
+  type: string
+  role: string
+}
+export type InventoryDetail =
+  | { kind: 'text'; value: string }
+  | { kind: 'list'; items: InventoryItem[] }
+  | { kind: 'teams'; rows: TeamAccess[] }
+  | { kind: 'permissions'; principal?: string; rows: PermissionGrant[] }
+  | { kind: 'roles'; rows: RoleAssignment[] }
 export interface ComponentReadiness {
   id: string
   projectId: string
@@ -47,7 +68,8 @@ export interface ComponentReadiness {
   environment: Environment
   status: Status
   ownerId: string
-  checks: ReadinessCheck[]
+  summary: string
+  detail: InventoryDetail | null
   blocker?: Blocker
   updatedAt: string
   resource: string

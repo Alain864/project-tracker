@@ -24,23 +24,20 @@ npm run format    # Format application source
 
 - **Overview:** environment readiness, team readiness, active blockers, and recent component updates. Summary metrics and rows lead to filtered views.
 - **Projects:** search and filter the matrix by status, application team, infrastructure owner, and component. Sort by project name, lowest readiness, or most blockers. Hide/show columns from the Columns menu.
-- **Project detail:** logically grouped components, environment switching, readiness counts, ownership, and blockers. Component rows open checklists; arrows open the component portfolio.
+- **Project detail:** logically grouped components, environment switching, readiness counts, and the recorded resource or table. Component rows open that detail; arrows open the component portfolio.
 - **Components:** reverse the perspective to inspect an infrastructure component across all projects. Filter by status, team, and owner. Expand readiness criteria to see what each component requires.
 - **Blockers:** filter by project, component, severity, infrastructure owner, and application team. Inspect the associated readiness drawer from any row.
 
-The global environment selector supports DEV, QA, PROD, and all environments. In the matrix, “All environments” shows a separate project row for each environment. Readiness drawers preserve matrix position; closing with **Esc** restores focus. Project detail’s back link restores matrix filters, sorting, and scroll position.
+The global environment selector supports DEV, TEST, PREPROD, PROD, and all environments. In the matrix, “All environments” shows a separate project row for each environment. Readiness drawers preserve matrix position; closing with **Esc** restores focus. Project detail’s back link restores matrix filters, sorting, and scroll position.
 
 ## Demo data and methodology
 
-- 8 AI projects across Aura, Photon, and Cloud Platform.
-- All 17 requested infrastructure component types.
-- 408 readiness records: 8 projects × 17 components × 3 environments.
-- Every component has its own realistic readiness checklist.
-- Ready, In Progress, Blocked, Not Started, and N/A are represented in every environment.
-- Tickets, resource references, owners, and October 2026 update dates are fictional. Ticket identifiers are displayed as references, not external links.
-- Readiness = Ready component records ÷ required component records. N/A is excluded; partial checks do not count as a Ready component.
-- A ready project has all required components Ready in the selected environment; selecting all environments requires readiness across DEV, QA, and PROD.
-- The blocker age is anchored to October 7, 2026 to keep the sample consistent.
+- 8 AI projects. Four have inventory from the tracker workbook; Photon, Knowledge, Analyzer, and Cost Investigator are waiting for data.
+- 19 infrastructure components across DEV, TEST, PREPROD, and PROD.
+- 608 records: 8 projects × 19 components × 4 environments.
+- Simple cells show the resource name. Lists, GitHub teams, Graph permissions, and Key Vault roles render as tables.
+- Ready means a value is recorded. Pending means Graph consent is outstanding. Missing is marked in the workbook. N/A is excluded from readiness.
+- Regenerate `src/inventory.json` with `python3 scripts/build-inventory.py /path/to/tracker-projects-v2.xlsx` after the remaining projects are filled.
 
 The prototype supports inspection and navigation. It does not write readiness changes or connect to live infrastructure. Environment and column preferences use LocalStorage; matrix context uses SessionStorage. Filters are reflected in the URL.
 

@@ -1,16 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
-import {
-  Search,
-  ArrowUpRight,
-  ArrowLeft,
-  ChevronRight,
-  CircleAlert,
-  Layers,
-  X,
-  Check,
-  ListChecks,
-} from 'lucide-react'
+import { Search, ArrowUpRight, ArrowLeft, ChevronRight, CircleAlert, Layers, X } from 'lucide-react'
 import { useApp } from './context'
 import { EnvBadge } from './ui'
 import {
@@ -19,6 +9,7 @@ import {
   projects,
   teams,
   owners,
+  environments,
   getRecords,
   statusCounts,
   readinessPercent,
@@ -26,7 +17,15 @@ import {
   teamName,
   shortDate,
 } from './data'
-import { ComponentIcon, Progress, ProjectAvatar, Badge, EmptyState, StatusIcon } from './ui'
+import {
+  ComponentIcon,
+  Progress,
+  ProjectAvatar,
+  Badge,
+  EmptyState,
+  StatusIcon,
+  statusLabel,
+} from './ui'
 export function ComponentsView() {
   const { environment } = useApp()
   const navigate = useNavigate()
@@ -119,7 +118,7 @@ export function ComponentsView() {
         {['All', ...groups].map((g) => (
           <button className={group === g ? 'active' : ''} key={g} onClick={() => setGroup(g)}>
             {g === 'All' ? 'All components' : g}
-            {g === 'All' && <span>17</span>}
+            {g === 'All' && <span>{components.length}</span>}
           </button>
         ))}
       </div>
@@ -127,7 +126,7 @@ export function ComponentsView() {
         <span>{cards.length} component types</span>
         <span>
           {environment === 'All'
-            ? 'Counts include component records in all 3 environments.'
+            ? `Counts include component records in all ${environments.length} environments.`
             : `Readiness in ${environment}`}{' '}
           · N/A excluded
         </span>
@@ -195,7 +194,6 @@ export function ComponentDetail() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const component = components.find((c) => c.id === componentId)
-  const [criteriaOpen, setCriteriaOpen] = useState(false)
   if (!component)
     return (
       <div className="page">
@@ -282,40 +280,17 @@ export function ComponentDetail() {
             <StatusIcon status={s} />
             <span>
               <strong>{counts[s]}</strong>
-              <small>{s}</small>
+              <small>{statusLabel[s]}</small>
             </span>
             <ArrowUpRight size={15} />
           </button>
         ))}
       </div>
-      <section className="panel criteria-panel">
-        <button aria-expanded={criteriaOpen} onClick={() => setCriteriaOpen(!criteriaOpen)}>
-          <ListChecks size={18} />
-          <span>
-            <strong>What does “Ready” mean for {component.shortName}?</strong>
-            <small>{component.checks.length} component-specific checks</small>
-          </span>
-          <ChevronRight size={17} className={criteriaOpen ? 'rotated' : ''} />
-        </button>
-        {criteriaOpen && (
-          <div className="criteria-list">
-            {component.checks.map((c) => (
-              <div key={c.label}>
-                <Check size={14} />
-                <span>
-                  <small>{c.category}</small>
-                  {c.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
       <section className="panel component-projects">
         <div className="panel-heading">
           <div>
             <h2>Project readiness</h2>
-            <p>Inspect a status to see the checklist and any active blocker.</p>
+            <p>Open a row to see the resource, groups, or permissions recorded for it.</p>
           </div>
           {counts.Blocked > 0 && (
             <button
@@ -386,6 +361,7 @@ export function ComponentDetail() {
                   <th>PROJECT</th>
                   <th>ENVIRONMENT</th>
                   <th>STATUS</th>
+                  <th>RECORDED</th>
                   <th>INFRASTRUCTURE OWNER</th>
                   <th>LAST UPDATED</th>
                   <th />
@@ -423,8 +399,11 @@ export function ComponentDetail() {
                           <Badge status={record.status} />
                         </button>
                       </td>
+                      <td className="recorded-summary" title={record.summary}>
+                        {record.summary}
+                      </td>
                       <td>{ownerName(record.ownerId)}</td>
-                      <td className="muted-text">{shortDate(record.updatedAt)}, 2026</td>
+                      <td className="muted-text">{shortDate(record.updatedAt)}</td>
                       <td>
                         <button
                           className="icon-button"

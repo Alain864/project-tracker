@@ -74,7 +74,7 @@ export function Overview() {
         <div className="heading-actions">
           <span className="date-label">
             <CalendarDays size={14} />
-            Oct 7, 2026
+            Oct 12, 2026
           </span>
           <button className="button primary" onClick={() => goProjects()}>
             Explore matrix
@@ -136,7 +136,7 @@ export function Overview() {
             <span className="metric-chip attention">Needs attention</span>
           </div>
           <span className="metric-caption">
-            {counts.Blocked} component blockers to resolve
+            {counts.Blocked} components marked missing
             <ArrowUpRight size={14} />
           </span>
         </button>
@@ -162,9 +162,11 @@ export function Overview() {
                     <span>
                       {env === 'DEV'
                         ? 'Development'
-                        : env === 'QA'
-                          ? 'Quality assurance'
-                          : 'Production'}
+                        : env === 'TEST'
+                          ? 'Test'
+                          : env === 'PREPROD'
+                            ? 'Pre-production'
+                            : 'Production'}
                     </span>
                     <ArrowUpRight size={13} />
                   </button>
@@ -370,7 +372,7 @@ export function Overview() {
       <div className="overview-tail">
         <span>Good infrastructure is a team effort.</span>
         <button onClick={() => navigate('/components')}>
-          Explore all 17 components
+          Explore all {components.length} components
           <ArrowRight size={14} />
         </button>
       </div>

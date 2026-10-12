@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams, useLocation, Link } from 'reac
 import {
   Search,
   SlidersHorizontal,
-  ChevronDown,
   ArrowUpDown,
   ArrowUpRight,
   ArrowLeft,
@@ -14,6 +13,7 @@ import {
   ChevronRight,
   RotateCcw,
   Clock3,
+  ChevronDown,
 } from 'lucide-react'
 import { useApp } from './context'
 import { EnvBadge } from './ui'
@@ -29,7 +29,6 @@ import {
   statusCounts,
   teamName,
   ownerName,
-  matchesStatus,
   filterMatrixRecords,
   fullDate,
 } from './data'
@@ -43,24 +42,27 @@ import {
   Badge,
   EmptyState,
 } from './ui'
-import type { Project, Environment, ComponentReadiness } from './types'
-function readHidden(): string[] {
+import type { Project, Environment, EnvironmentFilter, ComponentReadiness } from './types'
+function readHiddenGroups(): string[] {
   try {
-    const value = JSON.parse(localStorage.getItem('readiness-hidden-columns') ?? '[]')
+    const value = JSON.parse(localStorage.getItem('readiness-hidden-groups') ?? '[]')
     return Array.isArray(value) ? value.filter((v) => typeof v === 'string') : []
   } catch {
     return []
   }
 }
+function groupClass(group: string) {
+  return `group-${group.toLowerCase().replaceAll(' ', '-').replace('&', 'and')}`
+}
 export function ProjectsView() {
   const { environment, openDrawer, setEnvironment, selectedRecordId } = useApp()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const [hidden, setHidden] = useState<string[]>(readHidden)
-  const [columnsOpen, setColumnsOpen] = useState(false)
+  const [hiddenGroups, setHiddenGroups] = useState<string[]>(readHiddenGroups)
+  const [groupsOpen, setGroupsOpen] = useState(false)
   const [sort, setSort] = useState(() => sessionStorage.getItem('matrix-sort') ?? 'name')
-  const menuRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     sessionStorage.setItem('matrix-filters', params.toString())
   }, [params])
@@ -68,10 +70,8 @@ export function ProjectsView() {
     sessionStorage.setItem('matrix-sort', sort)
   }, [sort])
   const search = params.get('search') ?? ''
-  const status = params.get('status') ?? 'All'
   const team = params.get('team') ?? 'All'
   const owner = params.get('owner') ?? 'All'
-  const componentFilter = params.get('component') ?? 'All'
   const completion = params.get('completion')
   const updateFilter = (key: string, value: string) => {
     const next = new URLSearchParams(params)
@@ -82,29 +82,32 @@ export function ProjectsView() {
   const reset = () => {
     setParams({}, { replace: true })
   }
-  const visible = components.filter((c) =>
-    componentFilter !== 'All' ? c.id === componentFilter : !hidden.includes(c.id),
-  )
-  const visibleGroups = groups.filter((group) => visible.some((c) => c.group === group))
+  const visible = components.filter((c) => !hiddenGroups.includes(c.group))
+  const visibleGroups = groups.filter((group) => !hiddenGroups.includes(group))
+  const toggleGroup = (group: string) =>
+    setHiddenGroups((current) =>
+      current.includes(group) ? current.filter((item) => item !== group) : [...current, group],
+    )
   useEffect(() => {
     try {
-      localStorage.setItem('readiness-hidden-columns', JSON.stringify(hidden))
+      localStorage.setItem('readiness-hidden-groups', JSON.stringify(hiddenGroups))
     } catch {}
-  }, [hidden])
+  }, [hiddenGroups])
   useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setColumnsOpen(false)
+    if (!groupsOpen) return
+    const close = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setGroupsOpen(false)
     }
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setColumnsOpen(false)
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setGroupsOpen(false)
     }
     document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', key)
+    document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('mousedown', close)
-      document.removeEventListener('keydown', key)
+      document.removeEventListener('keydown', onKey)
     }
-  }, [])
+  }, [groupsOpen])
   useEffect(() => {
     const saved = sessionStorage.getItem('matrix-scroll')
     if (saved && scrollRef.current) {
@@ -122,12 +125,11 @@ export function ProjectsView() {
       })),
     )
     .filter(({ project, records }) => {
-      const filtered = filterMatrixRecords(records, componentFilter, owner)
+      const filtered = filterMatrixRecords(records, 'All', owner)
       return (
         project.name.toLowerCase().includes(search.toLowerCase()) &&
         (team === 'All' || project.teamId === team) &&
         (owner === 'All' || filtered.length > 0) &&
-        matchesStatus(filtered, status) &&
         (completion !== 'ready' ||
           records.filter((r) => r.status !== 'N/A').every((r) => r.status === 'Ready'))
       )
@@ -140,13 +142,7 @@ export function ProjectsView() {
             a.records.filter((r) => r.status === 'Blocked').length
           : a.project.name.localeCompare(b.project.name) || a.env.localeCompare(b.env),
     )
-  const hasFilters =
-    search ||
-    status !== 'All' ||
-    team !== 'All' ||
-    owner !== 'All' ||
-    componentFilter !== 'All' ||
-    completion
+  const hasFilters = search || team !== 'All' || owner !== 'All' || completion
   const goProject = (project: Project, env: Environment) => {
     setEnvironment(env)
     navigate(`/projects/${project.id}`, { state: { matrixEnvironment: environment } })
@@ -204,14 +200,15 @@ export function ProjectsView() {
           <div className="toolbar-filters">
             <select
               className="filter-select"
-              aria-label="Status filter"
-              value={status}
-              onChange={(e) => updateFilter('status', e.target.value)}
+              aria-label="Environment filter"
+              value={environment}
+              onChange={(e) => setEnvironment(e.target.value as EnvironmentFilter)}
             >
-              <option value="All">All statuses</option>
-              {['Ready', 'In Progress', 'Blocked', 'Not Started', 'N/A'].map((s) => (
-                <option key={s}>{s}</option>
-              ))}
+              <option value="All">All environments</option>
+              <option value="DEV">Development</option>
+              <option value="TEST">Test</option>
+              <option value="PREPROD">Pre-production</option>
+              <option value="PROD">Production</option>
             </select>
             <select
               className="filter-select"
@@ -239,60 +236,40 @@ export function ProjectsView() {
                 </option>
               ))}
             </select>
-            <select
-              className="filter-select component-filter"
-              aria-label="Component filter"
-              value={componentFilter}
-              onChange={(e) => updateFilter('component', e.target.value)}
-            >
-              <option value="All">All components</option>
-              {components.map((c) => (
-                <option value={c.id} key={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
           </div>
           <div className="column-menu-container" ref={menuRef}>
             <button
-              className={`button columns-button ${columnsOpen ? 'is-active' : ''}`}
-              onClick={() => setColumnsOpen(!columnsOpen)}
-              aria-expanded={columnsOpen}
+              className="button columns-button"
+              aria-expanded={groupsOpen}
+              aria-haspopup="true"
+              onClick={() => setGroupsOpen((open) => !open)}
             >
-              <SlidersHorizontal size={15} />
-              <span>Columns</span>
-              <ChevronDown size={13} />
+              <SlidersHorizontal size={14} />
+              Groups
+              <ChevronDown size={14} />
             </button>
-            {columnsOpen && (
-              <div className="column-menu">
+            {groupsOpen && (
+              <div className="column-menu" role="group" aria-label="Component groups">
                 <div className="column-menu-heading">
-                  <strong>Visible components</strong>
-                  <button onClick={() => setHidden([])}>Show all</button>
+                  <strong>Component groups</strong>
+                  <button
+                    type="button"
+                    onClick={() => setHiddenGroups(hiddenGroups.length ? [] : [...groups])}
+                  >
+                    {hiddenGroups.length ? 'Show all' : 'Hide all'}
+                  </button>
                 </div>
                 {groups.map((group) => (
-                  <div key={group}>
-                    <div className="column-menu-group">{group}</div>
-                    {components
-                      .filter((c) => c.group === group)
-                      .map((c) => (
-                        <label key={c.id}>
-                          <input
-                            type="checkbox"
-                            checked={!hidden.includes(c.id)}
-                            onChange={() =>
-                              setHidden(
-                                hidden.includes(c.id)
-                                  ? hidden.filter((id) => id !== c.id)
-                                  : [...hidden, c.id],
-                              )
-                            }
-                          />
-                          {c.name}
-                        </label>
-                      ))}
-                  </div>
+                  <label key={group} className={groupClass(group)}>
+                    <input
+                      type="checkbox"
+                      checked={!hiddenGroups.includes(group)}
+                      onChange={() => toggleGroup(group)}
+                    />
+                    <GroupIcon group={group} />
+                    {group}
+                  </label>
                 ))}
-                <p>Project and readiness columns stay pinned.</p>
               </div>
             )}
           </div>
@@ -353,7 +330,7 @@ export function ProjectsView() {
                     <th
                       key={group}
                       colSpan={visible.filter((c) => c.group === group).length}
-                      className={`group-${group.toLowerCase().replaceAll(' ', '-').replace('&', 'and')}`}
+                      className={groupClass(group)}
                     >
                       <span>
                         <GroupIcon group={group} />
@@ -408,8 +385,8 @@ export function ProjectsView() {
                             className={`cell-button ${selectedRecordId === record.id ? 'selected' : ''}`}
                             aria-expanded={selectedRecordId === record.id}
                             onClick={() => openDrawer(record)}
-                            aria-label={`${project.name}, ${component.name}, ${env}: ${record.status}`}
-                            title={`${project.name} · ${component.name}\n${record.status} · ${env}\n${record.checks.filter((c) => c.complete).length}/${record.checks.length} checks complete`}
+                            aria-label={`${project.name}, ${component.name}, ${env}: ${record.summary}`}
+                            title={`${project.name} · ${component.name}\n${env} · ${record.summary}`}
                           >
                             <StatusIcon status={record.status} />
                           </button>
@@ -422,9 +399,9 @@ export function ProjectsView() {
             </table>
             {visible.length === 0 && (
               <div className="no-columns">
-                <p>All component columns are hidden.</p>
-                <button className="button" onClick={() => setHidden([])}>
-                  Show all components
+                <p>All component groups are hidden.</p>
+                <button className="button" onClick={() => setHiddenGroups([])}>
+                  Show all groups
                 </button>
               </div>
             )}
@@ -434,15 +411,14 @@ export function ProjectsView() {
           <StatusLegend />
           <span className="scroll-hint">
             <MoveHorizontal size={15} />
-            {visible.length} of 17 components · scroll to explore
+            {visible.length} of {components.length} components · scroll to explore
           </span>
         </div>
       </section>
       <div className="matrix-bottom-note">
         <CircleAlert size={14} />
         <span>
-          Status filters show projects with at least one matching component
-          {componentFilter !== 'All' ? ' in the selected component' : ''}. N/A components are
+          Owner filters show projects with at least one matching component. N/A components are
           excluded from readiness.
         </span>
       </div>
@@ -552,15 +528,15 @@ export function ProjectDetail() {
         </span>
         <span>
           <StatusIcon status="In Progress" compact />
-          <strong>{counts['In Progress']}</strong>In progress
+          <strong>{counts['In Progress']}</strong>Pending
         </span>
         <span>
           <StatusIcon status="Blocked" compact />
-          <strong>{counts.Blocked}</strong>Blocked
+          <strong>{counts.Blocked}</strong>Missing
         </span>
         <span>
           <StatusIcon status="Not Started" compact />
-          <strong>{counts['Not Started']}</strong>Not started
+          <strong>{counts['Not Started']}</strong>Not recorded
         </span>
         <span className="na-summary">
           <strong>{counts['N/A']}</strong>Not applicable
@@ -590,7 +566,7 @@ export function ProjectDetail() {
                 <span>
                   <strong>{components.find((c) => c.id === r.componentId)!.name}</strong>
                   <EnvBadge environment={r.environment} />
-                  <span className="ticket-label">{r.blocker!.ticket}</span>
+                  {r.blocker!.ticket && <span className="ticket-label">{r.blocker!.ticket}</span>}
                 </span>
                 <p>{r.blocker!.description}</p>
                 <ChevronRight size={15} />
@@ -602,7 +578,8 @@ export function ProjectDetail() {
       <div className="section-intro">
         <h2>Infrastructure components</h2>
         <span>
-          {components.length} components · {environment === 'All' ? '3 environments' : environment}
+          {components.length} components ·{' '}
+          {environment === 'All' ? `${environments.length} environments` : environment}
         </span>
       </div>
       <div className="project-component-grid">
@@ -637,6 +614,14 @@ export function ProjectDetail() {
                     <ComponentIcon component={component} size={17} />
                     <span>{component.name}</span>
                   </button>
+                  {environment !== 'All' && (
+                    <span
+                      className="component-row-summary"
+                      title={records.find((r) => r.componentId === component.id)?.summary}
+                    >
+                      {records.find((r) => r.componentId === component.id)?.summary}
+                    </span>
+                  )}
                   <div
                     className={`project-component-statuses ${environment === 'All' ? 'multi-env' : ''}`}
                   >

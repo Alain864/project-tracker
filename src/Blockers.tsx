@@ -18,7 +18,6 @@ import {
   getRecords,
   ownerName,
   teamName,
-  ageDays,
   shortDate,
 } from './data'
 import { ProjectAvatar, ComponentIcon, EmptyState } from './ui'
@@ -27,6 +26,7 @@ export function BlockersView() {
   const [params, setParams] = useSearchParams()
   const [sort, setSort] = useState('severity')
   const records = getRecords(undefined, environment).filter((r) => r.blocker)
+  const ownerTeams = new Set(records.map((r) => r.ownerId)).size
   const search = params.get('search') ?? ''
   const projectFilter = params.get('project') ?? 'All'
   const componentFilter = params.get('component') ?? 'All'
@@ -49,19 +49,17 @@ export function BlockersView() {
         (team === 'All' || p.teamId === team) &&
         (owner === 'All' || r.ownerId === owner) &&
         (severity === 'All' || r.blocker!.severity === severity) &&
-        `${p.name} ${c.name} ${r.blocker!.description} ${r.blocker!.ticket}`
+        `${p.name} ${c.name} ${r.summary} ${r.blocker!.description}`
           .toLowerCase()
           .includes(search.toLowerCase())
       )
     })
     .sort((a, b) => {
       const priority = { Critical: 0, High: 1, Medium: 2 }
-      return sort === 'age'
-        ? a.blocker!.createdAt.localeCompare(b.blocker!.createdAt)
-        : sort === 'updated'
-          ? b.updatedAt.localeCompare(a.updatedAt)
-          : priority[a.blocker!.severity] - priority[b.blocker!.severity] ||
-            a.blocker!.createdAt.localeCompare(b.blocker!.createdAt)
+      return sort === 'updated'
+        ? b.updatedAt.localeCompare(a.updatedAt)
+        : priority[a.blocker!.severity] - priority[b.blocker!.severity] ||
+            a.summary.localeCompare(b.summary)
     })
   return (
     <div className="page blockers-page">
@@ -71,11 +69,11 @@ export function BlockersView() {
           <h1>
             Infrastructure blockers<span className="heading-dot">.</span>
           </h1>
-          <p>The issues standing between your projects and a ready platform.</p>
+          <p>Missing resources and permissions that are still pending consent.</p>
         </div>
         <span className="blocker-heading-count">
           <CircleAlert size={17} />
-          {records.length} active blockers
+          {records.length} open gaps
         </span>
       </div>
       <div className="blocker-summary">
@@ -95,7 +93,9 @@ export function BlockersView() {
         ))}
         <div className="blocker-summary-note">
           <span className="eyebrow">SHARED OWNERSHIP</span>
-          <strong>{new Set(records.map((r) => r.ownerId)).size} infrastructure teams</strong>
+          <strong>
+            {ownerTeams} infrastructure team{ownerTeams === 1 ? '' : 's'}
+          </strong>
           <span>Working to unblock {new Set(records.map((r) => r.projectId)).size} projects.</span>
         </div>
       </div>
@@ -105,7 +105,7 @@ export function BlockersView() {
             <Search size={16} />
             <input
               aria-label="Search blockers"
-              placeholder="Search blockers or tickets…"
+              placeholder="Search gaps…"
               value={search}
               onChange={(e) => setFilter('search', e.target.value)}
             />
@@ -192,7 +192,6 @@ export function BlockersView() {
               onChange={(e) => setSort(e.target.value)}
             >
               <option value="severity">Highest severity</option>
-              <option value="age">Oldest first</option>
               <option value="updated">Recently updated</option>
             </select>
           </label>
@@ -207,10 +206,8 @@ export function BlockersView() {
                   <th>SEVERITY</th>
                   <th>PROJECT / ENV</th>
                   <th>COMPONENT</th>
-                  <th>BLOCKER</th>
+                  <th>DETAIL</th>
                   <th>OWNER</th>
-                  <th>TICKET</th>
-                  <th>AGE</th>
                   <th>UPDATED</th>
                   <th />
                 </tr>
@@ -231,7 +228,7 @@ export function BlockersView() {
                           openDrawer(record)
                         }
                       }}
-                      aria-label={`Inspect blocker ${blocker.ticket} for ${project.name} ${component.name} ${record.environment}`}
+                      aria-label={`Inspect ${record.summary} for ${project.name} ${component.name} ${record.environment}`}
                     >
                       <td>
                         <span className={`severity ${blocker.severity.toLowerCase()}`}>
@@ -261,14 +258,6 @@ export function BlockersView() {
                         <span title={blocker.description}>{blocker.description}</span>
                       </td>
                       <td className="blocker-owner">{ownerName(record.ownerId)}</td>
-                      <td>
-                        <span className="ticket-label">{blocker.ticket}</span>
-                      </td>
-                      <td>
-                        <span className={ageDays(blocker.createdAt) > 10 ? 'old-blocker' : ''}>
-                          {ageDays(blocker.createdAt)}d
-                        </span>
-                      </td>
                       <td className="muted-text">{shortDate(record.updatedAt)}</td>
                       <td>
                         <ChevronRight size={15} />
@@ -281,8 +270,8 @@ export function BlockersView() {
           </div>
         )}
         <div className="table-footer">
-          <span>Click any blocker to inspect its component readiness.</span>
-          <span>Age as of Oct 7, 2026</span>
+          <span>Click a row to see the recorded inventory.</span>
+          <span>Inventory dated Oct 12, 2026</span>
         </div>
       </section>
     </div>

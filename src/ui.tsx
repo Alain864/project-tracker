@@ -21,6 +21,13 @@ import {
   ArrowUpRight,
 } from 'lucide-react'
 import type { InfrastructureComponent, Project, Status, Environment } from './types'
+export const statusLabel: Record<Status, string> = {
+  Ready: 'Ready',
+  'In Progress': 'Pending',
+  Blocked: 'Missing',
+  'Not Started': 'Not recorded',
+  'N/A': 'N/A',
+}
 export const statusClass = (status: Status) =>
   status.toLowerCase().replaceAll(' ', '-').replace('/', '')
 export function StatusIcon({ status, compact = false }: { status: Status; compact?: boolean }) {
@@ -44,7 +51,7 @@ export function Badge({ status }: { status: Status }) {
   return (
     <span className={`status-badge ${statusClass(status)}`}>
       <StatusIcon status={status} compact />
-      {status}
+      {statusLabel[status]}
     </span>
   )
 }
@@ -56,6 +63,7 @@ export function ComponentIcon({
   size?: number
 }) {
   const map: Record<string, typeof Database> = {
+    vm: Boxes,
     postgres: Database,
     pgvector: Boxes,
     redis: Layers,
@@ -67,10 +75,11 @@ export function ComponentIcon({
     'github-teams': Users,
     nesgen: KeyRound,
     keyvault: ShieldCheck,
+    'keyvault-roles': ShieldCheck,
     spns: Fingerprint,
     'spns-graph': Network,
-    'backend-spns': Fingerprint,
     'frontend-spns': Fingerprint,
+    'fe-spn-graph': Network,
     'aad-groups': Users,
     'persona-groups': Users,
   }
@@ -153,7 +162,7 @@ export function StatusLegend() {
       {(['Ready', 'In Progress', 'Blocked', 'Not Started', 'N/A'] as Status[]).map((status) => (
         <span key={status}>
           <StatusIcon status={status} compact />
-          {status}
+          {statusLabel[status]}
         </span>
       ))}
     </div>
